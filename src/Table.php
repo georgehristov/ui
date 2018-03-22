@@ -250,7 +250,6 @@ class Table extends Lister
 
     protected $typeToDecorator = [
         'password' => 'Password',
-        'money'    => 'Money',
         'text'     => 'Text',
         'boolean'  => ['Status', ['positive' => [true], 'negative' => ['false']]],
     ];
