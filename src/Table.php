@@ -4,10 +4,12 @@
 
 namespace atk4\ui;
 
-use atk4\ui\TableColumn\FilterPopup;
+use atk4\core\PluginTrait;
 
 class Table extends Lister
 {
+	use PluginTrait;
+	
     // Overrides
     public $defaultTemplate = 'table.html';
     public $ui = 'table';
@@ -261,34 +263,9 @@ class Table extends Lister
      * @throws Exception
      * @throws \atk4\core\Exception
      */
-    public function setFilterColumn($cols = null)
+    public function setFilterColumn($columns = null)
     {
-        if (!$this->model) {
-            throw new Exception('Model need to be defined in order to use column filtering.');
-        }
-
-        // set filter to all column when null.
-        if (!$cols) {
-            foreach ($this->model->getFields() as $key => $field) {
-                if (isset($this->columns[$key]) && $this->columns[$key]) {
-                    $cols[] = $field->short_name;
-                }
-            }
-        }
-
-        // create column popup.
-        foreach ($cols as $colName) {
-            $col = $this->columns[$colName];
-            if ($col) {
-                $pop = $col->addPopup(new FilterPopup(['field' => $this->model->getField($colName), 'reload' => $this->reload, 'colTrigger' => '#'.$col->name.'_ac']));
-                $pop->isFilterOn() ? $col->setHeaderPopupIcon('green caret square down') : null;
-                $pop->form->onSubmit(function ($f) use ($pop) {
-                    return new jsReload($this->reload);
-                });
-                //apply condition according to popup form.
-                $this->model = $pop->setFilterCondition($this->model);
-            }
-        }
+    	$this->addPlugin(TableFilterColumnPlugin::class, compact('columns'));
     }
 
     /**

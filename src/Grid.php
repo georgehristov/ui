@@ -7,6 +7,7 @@ namespace atk4\ui;
 use atk4\core\HookTrait;
 use atk4\data\UserAction\Generic;
 use atk4\ui\ActionExecutor\Basic;
+use atk4\core\PluginTrait;
 
 /**
  * Implements a more sophisticated and interactive Data-Table component.
@@ -14,6 +15,8 @@ use atk4\ui\ActionExecutor\Basic;
 class Grid extends View
 {
     use HookTrait;
+    use PluginTrait;
+    
     /**
      * Will be initialized to Menu object, however you can set this to false to disable menu.
      *
@@ -40,13 +43,6 @@ class Grid extends View
      * @var Paginator|false
      */
     public $paginator = null;
-
-    /**
-     * Number of items per page to display.
-     *
-     * @var int
-     */
-    public $ipp = 50;
 
     /**
      * Calling addAction will add a new column inside $table, and will be re-used
@@ -104,6 +100,11 @@ class Grid extends View
     public $container = null;
 
     public $defaultTemplate = 'grid.html';
+    
+    protected $defaultPlugins = [
+    		GridMenuPlugin::class,
+    		GridPaginatorPlugin::class
+    ];
 
     /**
      * TableColumn\Action seed.
@@ -127,25 +128,15 @@ class Grid extends View
         $this->container = $this->add(['View', 'template' => $this->template->cloneRegion('Container')]);
         $this->template->del('Container');
 
-        if (!$this->sortTrigger) {
-            $this->sortTrigger = $this->name.'_sort';
-        }
-
-        if ($this->menu !== false) {
-            $this->menu = $this->add($this->factory(['Menu', 'activate_on_click' => false], $this->menu, 'atk4\ui'), 'Menu');
-        }
-
+        $this->sortTrigger = $this->sortTrigger?: $this->name.'_sort';
+      
         $this->table = $this->container->add($this->factory(['Table', 'very compact very basic striped single line', 'reload' => $this->container], $this->table, 'atk4\ui'), 'Table');
 
-        if ($this->paginator !== false) {
-            $seg = $this->container->add(['View'], 'Paginator')->addStyle('text-align', 'center');
-            $this->paginator = $seg->add($this->factory(['Paginator', 'reload' => $this->container], $this->paginator, 'atk4\ui'));
-            $this->stickyGet($this->paginator->name);
-        }
-
+        $this->addDefaultPlugins();
+        
         $this->stickyGet('_q');
     }
-
+    
     /**
      * Set TableColumn\Actions seed.
      *
@@ -220,13 +211,9 @@ class Grid extends View
      */
     public function setIpp($ipp, $label = 'Item per pages:')
     {
-        if (is_array($ipp)) {
-            $this->addItemsPerPageSelector($ipp, $label);
-
-            $this->ipp = $_GET['ipp'] ?? $ipp[0];
-        } else {
-            $this->ipp = $ipp;
-        }
+        if (! $this->hasPlugin('paginator')) return;
+        
+        $this->getPlugin('paginator')->setIpp(...func_get_args());
     }
 
     /**
@@ -241,33 +228,9 @@ class Grid extends View
      */
     public function addItemsPerPageSelector($items = [10, 25, 50, 100], $label = 'Item per pages:')
     {
-        if ($ipp = $this->container->stickyGet('ipp')) {
-            $this->ipp = $ipp;
-        } else {
-            $this->ipp = $items[0];
-        }
-
-        $pageLength = $this->paginator->add(['ItemsPerPageSelector', 'pageLengthItems' => $items, 'label' => $label, 'currentIpp' => $this->ipp], 'afterPaginator');
-        $this->paginator->template->trySet('PaginatorType', 'ui grid');
-
-        if ($sortBy = $this->getSortBy()) {
-            $pageLength->stickyGet($this->sortTrigger, $sortBy);
-        }
-
-        $pageLength->onPageLengthSelect(function ($ipp) use ($pageLength) {
-            $this->ipp = $ipp;
-            $this->setModelLimitFromPaginator();
-            //add ipp to quicksearch
-            if ($this->quickSearch instanceof jsSearch) {
-                $this->container->js(true, $this->quickSearch->js()->atkJsSearch('setUrlArgs', ['ipp', $this->ipp]));
-            }
-            $this->applySort();
-
-            //return the view to reload.
-            return $this->container;
-        });
-
-        return $this;
+    	if (! $this->hasPlugin('paginator')) return;
+    	
+    	return $this->getPlugin('paginator')->addItemsPerPageSelector(...func_get_args());
     }
 
     /**
@@ -340,31 +303,7 @@ class Grid extends View
      */
     public function addQuickSearch($fields = [], $hasAutoQuery = false)
     {
-        if (!$this->model) {
-            throw new Exception(['Call setModel() before addQuickSearch()']);
-        }
-
-        if (!$fields) {
-            $fields = [$this->model->title_field];
-        }
-
-        if (!$this->menu) {
-            throw new Exception(['Unable to add QuickSearch without Menu']);
-        }
-
-        $view = $this->menu
-            ->addMenuRight()->addItem()->setElement('div')
-            ->add('View');
-
-        $this->quickSearch = $view->add(['jsSearch', 'reload' => $this->container, 'autoQuery' => $hasAutoQuery]);
-
-        if ($q = $this->stickyGet('_q')) {
-            $cond = [];
-            foreach ($fields as $field) {
-                $cond[] = [$field, 'like', '%'.$q.'%'];
-            }
-            $this->model->addCondition($cond);
-        }
+    	return $this->addPlugin(GridQuickSearchPlugin::class, compact('fields', 'hasAutoQuery'));
     }
 
     /**
@@ -476,10 +415,10 @@ class Grid extends View
      */
     public function addFilterColumn($names = null)
     {
-        if (!$this->menu) {
-            throw new Exception(['Unable to add Filter Column without Menu']);
+        if ($this->hasPlugin('menu')) {
+        	$this->getPluginSeed('menu')->addItem(['Clear Filters'], new \atk4\ui\jsReload($this->table->reload, ['atk_clear_filter' => 1]));
         }
-        $this->menu->addItem(['Clear Filters'], new \atk4\ui\jsReload($this->table->reload, ['atk_clear_filter' => 1]));
+        
         $this->table->setFilterColumn($names);
 
         return $this;
@@ -599,7 +538,7 @@ class Grid extends View
      */
     public function getSortBy()
     {
-        return isset($_GET[$this->sortTrigger]) ? $_GET[$this->sortTrigger] : null;
+        return $_GET[$this->sortTrigger] ?? null;
     }
 
     /**
@@ -612,10 +551,6 @@ class Grid extends View
         }
 
         $sortBy = $this->getSortBy();
-
-        if ($sortBy && $this->paginator) {
-            $this->paginator->addReloadArgs([$this->sortTrigger => $sortBy]);
-        }
 
         $desc = false;
         if ($sortBy && $sortBy[0] == '-') {
@@ -698,18 +633,6 @@ class Grid extends View
     }
 
     /**
-     * Will set model limit according to paginator value.
-     *
-     * @throws \atk4\data\Exception
-     * @throws \atk4\dsql\Exception
-     */
-    private function setModelLimitFromPaginator()
-    {
-        $this->paginator->setTotal(ceil($this->model->action('count')->getOne() / $this->ipp));
-        $this->model->setLimit($this->ipp, ($this->paginator->page - 1) * $this->ipp);
-    }
-
-    /**
      * Renders view.
      *
      * Before rendering take care of data sorting.
@@ -727,16 +650,11 @@ class Grid extends View
      */
     public function recursiveRender()
     {
-        // bind with paginator
-        if ($this->paginator) {
-            $this->setModelLimitFromPaginator();
-        }
-
-        if ($this->quickSearch instanceof jsSearch) {
-            if ($sortBy = $this->getSortBy()) {
-                $this->container->js(true, $this->quickSearch->js()->atkJsSearch('setUrlArgs', [$this->sortTrigger, $sortBy]));
-            }
-        }
+    	if ($sortBy = $this->getSortBy()) {
+    		$this->setUrlArgs([$this->sortTrigger => $sortBy]);
+    	}
+    	
+        $this->hook('beforeRecursiveRender');
 
         return parent::recursiveRender();
     }
