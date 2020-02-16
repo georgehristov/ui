@@ -102,8 +102,9 @@ class Grid extends View
     public $defaultTemplate = 'grid.html';
     
     protected $defaultPlugins = [
-    		GridMenuPlugin::class,
-    		GridPaginatorPlugin::class
+            'menu' => GridPlugin\Menu::class,
+    		'paginator' => GridPlugin\Paginator::class,
+    		'quickSearch' => GridPlugin\QuickSearch::class
     ];
 
     /**
@@ -209,12 +210,12 @@ class Grid extends View
      *
      * @throws Exception
      */
-    public function setIpp($ipp, $label = 'Item per pages:')
-    {
-        if (! $this->hasPlugin('paginator')) return;
+//     public function setIpp($ipp, $label = 'Item per pages:')
+//     {
+//         if (! $this->hasPlugin('paginator')) return;
         
-        $this->getPlugin('paginator')->setIpp(...func_get_args());
-    }
+//         $this->getPlugin('paginator')->setIpp(...func_get_args());
+//     }
 
     /**
      * Add ItemsPerPageSelector View in grid menu or paginator in order to dynamically setup number of item per page.
@@ -226,12 +227,12 @@ class Grid extends View
      *
      * @return $this
      */
-    public function addItemsPerPageSelector($items = [10, 25, 50, 100], $label = 'Item per pages:')
-    {
-    	if (! $this->hasPlugin('paginator')) return;
+//     public function addItemsPerPageSelector($items = [10, 25, 50, 100], $label = 'Item per pages:')
+//     {
+//     	if (! $this->hasPlugin('paginator')) return;
     	
-    	return $this->getPlugin('paginator')->addItemsPerPageSelector(...func_get_args());
-    }
+//     	return $this->getPlugin('paginator')->addItemsPerPageSelector(...func_get_args());
+//     }
 
     /**
      * Add dynamic scrolling paginator.
@@ -301,10 +302,10 @@ class Grid extends View
      * @throws Exception
      * @throws \atk4\core\Exception
      */
-    public function addQuickSearch($fields = [], $hasAutoQuery = false)
-    {
-    	return $this->addPlugin(GridQuickSearchPlugin::class, compact('fields', 'hasAutoQuery'));
-    }
+//     public function addQuickSearch($fields = [], $autoQuery = false)
+//     {
+//         return $this->add([GridPlugin\QuickSearch::class, 'fields' => $fields, 'autoQuery' => $autoQuery]);
+//     }
 
     /**
      * Returns JS for reloading View.
@@ -415,8 +416,8 @@ class Grid extends View
      */
     public function addFilterColumn($names = null)
     {
-        if ($this->hasPlugin('menu')) {
-        	$this->getPluginSeed('menu')->addItem(['Clear Filters'], new \atk4\ui\jsReload($this->table->reload, ['atk_clear_filter' => 1]));
+        if ($this->menu) {
+        	$this->menu->addItem(['Clear Filters'], new \atk4\ui\jsReload($this->table->reload, ['atk_clear_filter' => 1]));
         }
         
         $this->table->setFilterColumn($names);

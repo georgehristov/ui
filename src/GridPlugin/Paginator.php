@@ -1,20 +1,21 @@
 <?php
 
-namespace atk4\ui;
+namespace atk4\ui\GridPlugin;
 
 use atk4\core\Plugin;
 
-class GridPaginatorPlugin extends Plugin
+class Paginator extends Plugin
 {
-	protected $target = Grid::class;
-
-	public $alias = 'paginator';
+	public $short_name = 'paginator';
 	
-	public $ipp = 10;
+	public $ipp = 1;
 	
-	protected function activate() {
+	public function init() 
+	{
+	    parent::init();
+	    
 		/**
-		 * @var Grid $grid
+		 * @var \atk4\ui\Grid $grid
 		 */
 		$grid = $this->owner;
 		
@@ -25,6 +26,16 @@ class GridPaginatorPlugin extends Plugin
 		$grid->addHook('beforeRecursiveRender', function($grid) {
 			$this->setModelLimitFromPaginator();
 		});
+	}
+	
+	public function setControlMethods() {
+	    $grid->addMethod('setIpp', function($grid, $ipp, $label) {
+	        $this->setIpp($ipp, $label);
+	    });
+	        
+	    $grid->addMethod('addItemsPerPageSelector', function($grid, $items, $label) {
+	       $this->addItemsPerPageSelector($items, $label);
+	    });
 	}
 	
 	public function setUrlArgs($args)
@@ -40,7 +51,7 @@ class GridPaginatorPlugin extends Plugin
 	 * @param int|array $ipp
 	 * @param string    $label
 	 *
-	 * @throws Exception
+	 * @throws \Exception
 	 */
 	public function setIpp($ipp, $label = 'Item per pages:')
 	{
@@ -74,6 +85,7 @@ class GridPaginatorPlugin extends Plugin
 		
 		$this->selector->onPageLengthSelect(function ($ipp) use ($grid) {
 			$this->ipp = $ipp;
+			
 			$this->setModelLimitFromPaginator();
 
 			$grid->setUrlArgs(compact('ipp'));

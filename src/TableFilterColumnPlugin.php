@@ -19,7 +19,7 @@ class TableFilterColumnPlugin extends Plugin
 	 * @var array
 	 */
 	public $columns = [];
-	
+
 	protected function activate() {
 		/**
 		 * @var Table $table
@@ -34,7 +34,7 @@ class TableFilterColumnPlugin extends Plugin
 		foreach ($this->getColumns() as $columnName) {
 			if (! $column = $table->columns[$columnName]) continue;
 
-			$pop = $column->addPopup(new TableColumn\FilterPopup(['field' => $table->model->getField($columnName), 'reload' => $table->reload, 'colTrigger' => '#'.$column->name.'_ac']));
+			$this->{$columnName} = $pop = $column->addPopup(new TableColumn\FilterPopup(['field' => $table->model->getField($columnName), 'reload' => $table->reload, 'colTrigger' => '#'.$column->name.'_ac']));
 			$pop->isFilterOn() ? $column->setHeaderPopupIcon('green caret square down') : null;
 			$pop->form->onSubmit(function ($f) use ($pop, $table) {
 				return new jsReload($table->reload);
