@@ -1,7 +1,7 @@
 <?php
 
 date_default_timezone_set('UTC');
-include 'init.php';
+include_once __DIR__ . '/init.php';
 
 $data = [
     ['id'=>1, 'action'=>'Salary', 'amount'=>200],
@@ -9,7 +9,7 @@ $data = [
     ['id'=> 3, 'action'=>'Tax', 'amount'=>-40],
 ];
 
-$m = new \atk4\data\Model(new \atk4\data\Persistence_Static($data));
+$m = new \atk4\data\Model(new \atk4\data\Persistence\Static_($data));
 $m->getField('amount')->type = 'money';
 
 // ========================================================

@@ -2,17 +2,19 @@
 
 date_default_timezone_set('UTC');
 
-require '../vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 /* START - PHPUNIT & COVERAGE SETUP */
-if (file_exists('coverage.php')) {
-    include_once 'coverage.php';
+if (file_exists(__DIR__ . '/coverage.php')) {
+    include_once __DIR__ . '/coverage.php';
 }
 
 class Demo extends \atk4\ui\Columns
 {
     public $left;
     public $right;
+    public static $isInitialized = false;
+    public $highlightDefaultStyle = 'dark';
 
     public function init()
     {
@@ -23,12 +25,23 @@ class Demo extends \atk4\ui\Columns
         $this->right = $this->addColumn();
     }
 
-    public function setCode($code)
+    public function setCode($code, $lang = 'php')
     {
-        $this->left->add(['element'=>'pre'])->set($code);
+        $this->highLightCode();
+        $this->left->add(['element'=>'pre'])->add(['element' => 'code'])->addClass($lang)->set($code);
         $app = $this->right;
         $app->db = $this->app->db;
         eval($code);
+    }
+
+    public function highLightCode()
+    {
+        if (!self::$isInitialized) {
+            $this->app->requireCSS('//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/styles/'.$this->highlightDefaultStyle.'.min.css');
+            $this->app->requireJS('//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.16.2/build/highlight.min.js');
+            $this->js(true, (new \atk4\ui\jsChain('hljs'))->initHighlighting());
+            self::$isInitialized = true;
+        }
     }
 }
 
@@ -138,4 +151,4 @@ if (isset($layout->leftMenu)) {
     $img = 'https://raw.githubusercontent.com/atk4/ui/07208a0af84109f0d6e3553e242720d8aeedb784/public/logo.png';
 }
 
-require_once 'somedatadef.php';
+require_once __DIR__ . '/somedatadef.php';

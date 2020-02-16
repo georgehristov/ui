@@ -229,14 +229,17 @@ class Table extends Lister
             // column is not associated with any model field
             $columnDecorator = $this->_add($this->factory($columnDecorator, ['table' => $this], 'atk4\ui\TableColumn'));
         } elseif (is_array($columnDecorator) || is_string($columnDecorator)) {
-            $columnDecorator = $this->decoratorFactory($field, $columnDecorator);
+            $columnDecorator = $this->decoratorFactory($field, array_merge(['columnData' => $name], is_string($columnDecorator) ? [$columnDecorator] : $columnDecorator));
         } elseif (!$columnDecorator) {
-            $columnDecorator = $this->decoratorFactory($field);
+            $columnDecorator = $this->decoratorFactory($field, ['columnData' => $name]);
         } elseif (is_object($columnDecorator)) {
             if (!$columnDecorator instanceof \atk4\ui\TableColumn\Generic) {
                 throw new Exception(['Column decorator must descend from \atk4\ui\TableColumn\Generic', 'columnDecorator' => $columnDecorator]);
             }
             $columnDecorator->table = $this;
+            if (!$columnDecorator->columnData) {
+                $columnDecorator->columnData = $name;
+            }
             $this->_add($columnDecorator);
         } else {
             throw new Exception(['Value of $columnDecorator argument is incorrect', 'columnDecorator' => $columnDecorator]);

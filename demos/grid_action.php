@@ -1,7 +1,7 @@
 <?php
 
-require 'init.php';
-require 'database.php';
+require_once __DIR__ . '/init.php';
+require_once __DIR__ . '/database.php';
 
 $country = new Country($db);
 
@@ -32,7 +32,7 @@ $del_executor = new atk4\ui\ActionExecutor\Preview([
             $g->table->jsRemoveRow($model->get('id')),
         ];
     },
-   ]
+]
 );
 
 $del_action = $country->addAction('delete', [

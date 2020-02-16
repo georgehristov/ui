@@ -1,7 +1,7 @@
 <?php
 
-require 'init.php';
-require 'database.php';
+require_once __DIR__ . '/init.php';
+require_once __DIR__ . '/database.php';
 
 class TestModel extends \atk4\data\Model
 {
@@ -29,7 +29,7 @@ $data = ['test' => [
     8 => ['id'=>8, 'name'=>'ABC2', 'code'=>18, 'country'=>'Russia'],
     9 => ['id'=>9, 'name'=>'ABC1', 'code'=>19, 'country'=>'Latvia'],
 ]];
-$p = new \atk4\data\Persistence_Array($data);
+$p = new \atk4\data\Persistence\Array_($data);
 $m = new TestModel($p);
 
 // add CRUD

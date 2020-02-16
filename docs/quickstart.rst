@@ -20,6 +20,8 @@ Agile Toolkit will work anywhere where PHP can. Find a suitable guide on how to 
 PHP on your platform. Having a local database is a plus, but our initial application will
 work without persistent database.
 
+Requirements
+============
 
 Installing
 ==========
@@ -35,13 +37,13 @@ Coding "Hello, World"
 
 Open a new file `index.php` and enter the following code::
 
-    <?php                                    // 1
-    require 'vendor/autoload.php';           // 2
+    <?php                                          // 1
+    require_once __DIR__ . '/vendor/autoload.php'; // 2
 
-    $app = new \atk4\ui\App('My First App'); // 3
-    $app->initLayout('Centered');            // 4
+    $app = new \atk4\ui\App('My First App');       // 3
+    $app->initLayout('Centered');                  // 4
 
-    $app->add('HelloWorld');                 // 5
+    $app->add('HelloWorld');                       // 5
 
 .. rubric:: Clarifications
 
@@ -64,6 +66,35 @@ Instead of manually outputting a text "Hello, World!" we have used a standard co
 demonstrates a core purpose of Agile Toolkit. Instead of doing a lot of things yourself, you can rely on
 components that do things for you.
 
+
+.. _using-namespaces:
+
+Using namespaces
+================
+
+By using namespaces you will be able to write less code for classes you use more often by using namespace references and
+writing clearer code.
+
+By using namespaces you will make out of this::
+
+    <?php
+    $app = new \atk4\ui\App('My First App');
+
+this::
+
+    <?php
+    use \atk4\ui\App; // just declared once at the top of your file
+
+    $app = new App('My First App');
+
+This is helpful, if you use in this case "new App('...');" several times in your code (hint: normally you use "new App()" just
+once in your project, but other classes could be used more often in one file)
+
+If you call it only once in a file, just use::
+
+    <?php
+    $app = new \atk4\ui\App('My First App');
+
 Data Persistence
 ================
 
@@ -74,7 +105,7 @@ To be able to actually run this example, create a new file todo.php in the same 
 create the application::
 
     <?php
-    require 'vendor/autoload.php';
+    require_once __DIR__ . '/vendor/autoload.php';
 
     $app = new \atk4\ui\App('ToDo List');
     $app->initLayout('Centered');
@@ -83,8 +114,24 @@ All components of Agile Data are database-agnostic and will not concern themselv
 I will start the session and connect `persistence <https://agile-data.readthedocs.io/en/develop/persistence.html>`_
 with it::
 
+    <?php
     session_start();
     $s = new \atk4\data\Persistence_Array($_SESSION);
+
+If you're establishing a database connection that should be used throughout your whole application and in many classes,
+you can define it in the $app->db class::
+
+    <?php
+    use atk4\data\Persistence;
+    use atk4\ui\App;
+
+    $db = Persistence::connect(DB_URI,DB_USR, DB_PWD);
+
+    $app = new App([
+    "title" => "Erp v." . ERP_VER,
+    "db" => $db,
+    "call_exit" => false
+    ]);
 
 Data Model
 ==========
@@ -94,16 +141,16 @@ single ToDo item::
 
 
     class ToDoItem extends \atk4\data\Model {
-        public $table = 'todo_item';        // 6
+        public $table = 'todo_item';               // 6
         function init() {
             parent::init();
 
             $this->addField('name', ['caption'=>'Task Name', 'required'=>true]);
-                                            // 7
+                                                   // 7
             $this->addField('due', [
-              'type'=>'date',               // 8
+              'type'=>'date',                      // 8
               'caption'=>'Due Date',
-              'default'=>new \DateTime('+1 week')   // 9
+              'default'=>new \DateTime('+1 week')  // 9
             ]);
         }
     }
@@ -119,6 +166,30 @@ single ToDo item::
 .. [#f9] Business Model is always using native PHP types, regardless of where data is stored.
 
 As you might have noted already, Persistence and Model are defined independently from each-other.
+
+Instantiate App using DIContainerTrait (Dependency Injection)
+=============================================================
+
+Class App use `DIContainerTrait` which allow us to inject dependency directly in constructor::
+
+    use Monolog\Logger;
+    use Monolog\Handler\StreamHandler;
+
+    // create a log channel
+    $logger = new Logger('name');
+    $logger->pushHandler(new StreamHandler('path/to/your.log', Logger::WARNING));
+
+    use atk4\data\Persistence;
+    use atk4\ui\App;
+    $db = Persistence::connect("mysql://localhost:3306/database_name", "user", "password");
+
+    $app = new App([
+        "title" => "Your application title",
+        "db" => $db,
+        "logger" => $logger
+    ]);
+
+
 
 Form and CRUD Components
 ========================
@@ -175,19 +246,19 @@ As mentioned before, UI Components in Agile Toolkit are often interchangeable, y
 another. In our example replace right column (label 17) with the following code::
 
     $grid = $col->addColumn()->add(['CRUD', 'paginator'=>false, // 18
-        'canCreate'=>false, 'canDelete'=>false              // 19
+        'canCreate'=>false, 'canDelete'=>false                  // 19
     ]);
     $grid->setModel(new ToDoItem($s));
 
-    $grid->menu->addItem('Complete Selected',               // 20
-        new \atk4\ui\jsReload($grid->table, [               // 21
-            'delete'=>$grid->addSelection()->jsChecked()    // 22
+    $grid->menu->addItem('Complete Selected',                   // 20
+        new \atk4\ui\jsReload($grid->table, [                   // 21
+            'delete'=>$grid->addSelection()->jsChecked()        // 22
         ])
     );
 
-    if (isset($_GET['delete'])) {                           // 23
+    if (isset($_GET['delete'])) {                               // 23
         foreach(explode(',', $_GET['delete']) as $id) {
-            $grid->model->delete($id);                      // 25
+            $grid->model->delete($id);                          // 25
         }
     }
 
@@ -241,5 +312,3 @@ more UI components:
 
  - https://github.com/atk4/money-lending-tutorial
  - (Demo: https://money-lending-tutorial.herokuapp.com)
-
-

@@ -1,6 +1,6 @@
 <?php
 
-require 'init.php';
+require_once __DIR__ . '/init.php';
 $img = 'https://github.com/atk4/ui/raw/07208a0af84109f0d6e3553e242720d8aeedb784/public/logo.png';
 
 $app->add(['Header', 'Default view has no styling']);
@@ -27,6 +27,7 @@ foreach (str_split('Click me!!') as $letter) {
 }
 
 $app->add(['Header', 'View load HTML from string or file']);
+/** @var \atk4\ui\View $plane */
 $plane = $app->add(['View', 'template' => new \atk4\ui\Template('<div id="{$_id}" class="ui statistic">
     <div class="value">
       <i class="plane icon"></i> {$num}

@@ -45,12 +45,12 @@ class Grid extends View
     public $paginator = null;
 
     /**
-     * Calling addAction will add a new column inside $table, and will be re-used
-     * for next addAction().
+     * Calling addActionButton will add a new column inside $table, and will be re-used
+     * for next addActionButton().
      *
-     * @var TableColumn\Actions
+     * @var TableColumn\ActionButtons
      */
-    public $actions = null;
+    public $actionButtons = null;
 
     /**
      * Calling addAction will add a new column inside $table with dropdown menu,
@@ -108,12 +108,12 @@ class Grid extends View
     ];
 
     /**
-     * TableColumn\Action seed.
-     * Defines which Table Decorator to use for Actions.
+     * TableColumn\ActionButtons seed.
+     * Defines which Table Decorator to use for ActionButtons.
      *
      * @var string
      */
-    protected $actionDecorator = 'Actions';
+    protected $actionButtonsDecorator = 'ActionButtons';
 
     /**
      * TableColumn\ActionMenu seed.
@@ -145,7 +145,7 @@ class Grid extends View
      */
     public function setActionDecorator($seed)
     {
-        $this->actionDecorator = $seed;
+        $this->actionButtonsDecorator = $seed;
     }
 
     /**
@@ -306,6 +306,7 @@ class Grid extends View
 //     {
 //         return $this->add([GridPlugin\QuickSearch::class, 'fields' => $fields, 'autoQuery' => $autoQuery]);
 //     }
+        if ($q !== '') {
 
     /**
      * Returns JS for reloading View.
@@ -335,13 +336,13 @@ class Grid extends View
      *
      * @return object
      */
-    public function addAction($button, $action = null, $confirm = false, $isDisabeld = false)
+    public function addActionButton($button, $action = null, $confirm = false, $isDisabeld = false)
     {
-        if (!$this->actions) {
-            $this->actions = $this->table->addColumn(null, $this->actionDecorator);
+        if (!$this->actionButtons) {
+            $this->actionButtons = $this->table->addColumn(null, $this->actionButtonsDecorator);
         }
 
-        return $this->actions->addAction($button, $action, $confirm, $isDisabeld);
+        return $this->actionButtons->addButton($button, $action, $confirm, $isDisabeld);
     }
 
     /**
@@ -485,11 +486,11 @@ class Grid extends View
      */
     public function addModalAction($button, $title, $callback, $args = [])
     {
-        if (!$this->actions) {
-            $this->actions = $this->table->addColumn(null, 'Actions');
+        if (!$this->actionButtons) {
+            $this->actionButtons = $this->table->addColumn(null, 'Actions');
         }
 
-        return $this->actions->addModal($button, $title, $callback, $this, $args);
+        return $this->actionButtons->addModal($button, $title, $callback, $this, $args);
     }
 
     /**
@@ -574,7 +575,7 @@ class Grid extends View
         $this->table->on(
             'click',
             'thead>tr>th',
-            new jsReload($this->container, [$this->sortTrigger => (new jQuery())->data('column')])
+            new jsReload($this->container, [$this->sortTrigger => (new jQuery())->data('sort')])
         );
     }
 
@@ -611,9 +612,8 @@ class Grid extends View
     {
         $this->selection = $this->table->addColumn(null, 'CheckBox');
 
-        // Move element to the beginning
-        $k = array_search($this->selection, $this->table->columns);
-        $this->table->columns = [$k => $this->table->columns[$k]] + $this->table->columns;
+        // Move last column to the beginning in table column array.
+        array_unshift($this->table->columns, array_pop($this->table->columns));
 
         return $this->selection;
     }
@@ -627,6 +627,7 @@ class Grid extends View
     public function addDragHandler()
     {
         $handler = $this->table->addColumn(null, 'DragHandler');
+
         // Move last column to the beginning in table column array.
         array_unshift($this->table->columns, array_pop($this->table->columns));
 

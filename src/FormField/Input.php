@@ -87,19 +87,6 @@ class Input extends Generic
     }
 
     /**
-     * Method similar to View::js() however will adjust selector
-     * to target the "input" element.
-     *
-     * $field->jsInput(true)->val(123);
-     *
-     * @return jQuery
-     */
-    public function jsInput($when = null, $action = null)
-    {
-        return $this->js($when, $action, '#'.$this->id.'_input');
-    }
-
-    /**
      * Returns presentable value to be inserted into input tag.
      *
      * @return mixed
@@ -172,7 +159,7 @@ class Input extends Generic
             if ($action->args) {
                 $val_as_arg = array_keys($action->args)[0];
 
-                $button->on('click', $action, [$val_as_arg => $this->jsInput()->js()->val()]);
+                $button->on('click', $action, ['args' => [$val_as_arg => $this->jsInput()->val()]]);
             } else {
                 $button->on('click', $action);
             }
